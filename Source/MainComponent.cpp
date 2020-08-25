@@ -7,12 +7,13 @@ MainComponent::MainComponent()
     // you add any child components.
     addAndMakeVisible(frequencySlider);
     frequencySlider.setRange(20.0, 10000); //sets the freq. range from 20Hz to 10k Hz
-    frequencySlider.setValue(440.0); //initializes the synth with a freq of A440
+    frequencySlider.setValue(currentFrequency); //initializes the synth with a freq of A440
     frequencySlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 100, 20);
     frequencySlider.setSkewFactorFromMidPoint(500.0); //sets up logarithmic response for slider
     frequencySlider.onValueChange = [this]
     {
         if(currentAngle > 0)
+            targetFrequency = frequencySlider.getValue();
             updateAngleDelta();//angleDelta determines pitch, so the slider callback sets the angleDelta based on the slider's new value
     };
     
@@ -35,17 +36,36 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
     //gets pointer to the first element of the array which stores the samples for the left buffer
     auto* pRightBuffer = bufferToFill.buffer->getWritePointer(1, bufferToFill.startSample);
     //same for the right buffer
-    for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
+    auto localTargetFreq = targetFrequency;
+    if(currentFrequency != localTargetFreq)
     {
+    // with this code, the frequency just drifts toward that of the target over the course of one buffer length
+    auto freqIncrement = (localTargetFreq - currentFrequency) / bufferToFill.numSamples;
+    for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
+        {
         //the currentSample float sets its value based the stl function which returns the value of sin(currentAngle)
         auto currentSample = (float) std::sin(currentAngle);
+        currentFrequency += freqIncrement;
         /*the currentAngle is incremented based on the frequency controller angleDelta
          where the value of a given sample is f_n:
          f_n = sin((f_n - 1) + angleDelta)-- the constant angleDelta determines the phase difference between two points spaced equally in time (the frequency)
          */
+        updateAngleDelta();
         currentAngle += angleDelta;
         pLeftBuffer[sample] = currentSample * level; //sending the sample to both channel buffers
         pRightBuffer[sample] = currentSample * level;
+        }
+    currentFrequency = localTargetFreq;
+    } else
+    {
+        for(auto sample = 0; sample < bufferToFill.numSamples; ++sample)
+        {
+            auto currentSample = (float) std::sin(currentAngle);
+            currentAngle += angleDelta;
+            pLeftBuffer[sample] = currentSample * level; //sending the sample to both channel buffers
+            pRightBuffer[sample] = currentSample * level;
+        }
+        
     }
 }
 
@@ -74,7 +94,7 @@ void MainComponent::resized()
 void MainComponent::updateAngleDelta()
 {
     //determines how many (fractions of) cycles of the sin(freqSlider.getValue()) wave are completed in each sample
-    auto cyclesPerSample = frequencySlider.getValue() / currentSampleRate;
+    auto cyclesPerSample = currentFrequency / currentSampleRate;
     //angleDelta is equal to the change in phase angle over the period of 1 sample 
     angleDelta = cyclesPerSample * 2 * juce::MathConstants<double>::pi;
 }
