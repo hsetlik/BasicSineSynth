@@ -15,17 +15,26 @@ public:
     ~MainComponent() override;
 
     //==============================================================================
-    void prepareToPlay (int samplesPerBlockExpected, double sampleRate) override;
+    void prepareToPlay (int samplesPerBlockExpected, double sampleRate) override
+    {
+        currentSampleRate = sampleRate;
+        updateAngleDelta();
+    }
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override;
     void releaseResources() override;
 
     //==============================================================================
+    
     void paint (juce::Graphics& g) override;
     void resized() override;
-
+    void updateAngleDelta();
+    
 private:
     //==============================================================================
     // Your private member variables go here...
+    double currentSampleRate = 0.0, currentAngle = 0.0, angleDelta = 0.0;
+    juce::Slider frequencySlider;
+    
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

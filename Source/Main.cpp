@@ -21,11 +21,9 @@ public:
     bool moreThanOneInstanceAllowed() override             { return true; }
 
     //==============================================================================
-    void initialise (const juce::String& commandLine) override
+    void initialise (const juce::String&) override
     {
-        // This method is where you should put your application's initialisation code..
-
-        mainWindow.reset (new MainWindow (getApplicationName()));
+        mainWindow.reset (new MainWindow ("SineSynthTutorial", new MainComponent, *this));
     }
 
     void shutdown() override
@@ -58,14 +56,15 @@ public:
     class MainWindow    : public juce::DocumentWindow
     {
     public:
-        MainWindow (juce::String name)
+        MainWindow (const juce::String& name, juce::Component* c, JUCEApplication& a)
             : DocumentWindow (name,
                               juce::Desktop::getInstance().getDefaultLookAndFeel()
                                                           .findColour (juce::ResizableWindow::backgroundColourId),
-                              DocumentWindow::allButtons)
+                              DocumentWindow::allButtons),
+        app(a)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
+            setContentOwned (c, true);
 
            #if JUCE_IOS || JUCE_ANDROID
             setFullScreen (true);
@@ -93,6 +92,7 @@ public:
         */
 
     private:
+        JUCEApplication& app;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 
