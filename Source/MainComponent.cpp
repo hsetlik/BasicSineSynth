@@ -3,8 +3,6 @@
 //==============================================================================
 MainComponent::MainComponent()
 {
-    // Make sure you set the size of the component after
-    // you add any child components.
     addAndMakeVisible(frequencySlider);
     frequencySlider.setRange(20.0, 10000); //sets the freq. range from 20Hz to 10k Hz
     frequencySlider.setValue(currentFrequency); //initializes the synth with a freq of A440
@@ -14,8 +12,18 @@ MainComponent::MainComponent()
     {
         if(currentAngle > 0)
             targetFrequency = frequencySlider.getValue();
-            updateAngleDelta();//angleDelta determines pitch, so the slider callback sets the angleDelta based on the slider's new value
     };
+    
+    addAndMakeVisible(gainSlider);
+    gainSlider.setRange(0.0f, .175f);
+    gainSlider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 100, 20);
+    gainSlider.setSkewFactorFromMidPoint(0.0625);
+    gainSlider.setValue(0.0625);
+    gainSlider.onValueChange = [this]
+    {
+        updateCurrentGain();
+    };
+    
     
     setSize (400, 200);
     setAudioChannels (2, 2);
@@ -31,7 +39,7 @@ MainComponent::~MainComponent()
 
 void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
 {
-    auto level = 0.125f;
+    auto level = currentGain;
     auto* pLeftBuffer = bufferToFill.buffer->getWritePointer(0, bufferToFill.startSample);
     //gets pointer to the first element of the array which stores the samples for the left buffer
     auto* pRightBuffer = bufferToFill.buffer->getWritePointer(1, bufferToFill.startSample);
@@ -89,6 +97,7 @@ void MainComponent::paint (juce::Graphics& g)
 void MainComponent::resized()
 {
     frequencySlider.setBounds (10, 10, getWidth() - 20, 20);
+    gainSlider.setBounds(10, 40, getWidth() - 20, 20);
 }
 
 void MainComponent::updateAngleDelta()
@@ -97,4 +106,10 @@ void MainComponent::updateAngleDelta()
     auto cyclesPerSample = currentFrequency / currentSampleRate;
     //angleDelta is equal to the change in phase angle over the period of 1 sample 
     angleDelta = cyclesPerSample * 2 * juce::MathConstants<double>::pi;
+}
+
+
+void MainComponent::updateCurrentGain()
+{
+    currentGain = gainSlider.getValue();
 }

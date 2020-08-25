@@ -28,6 +28,7 @@ public:
     void paint (juce::Graphics& g) override;
     void resized() override;
     void updateAngleDelta();
+    void updateCurrentGain();
     
 private:
     //==============================================================================
@@ -35,6 +36,8 @@ private:
     double currentSampleRate = 0.0, currentAngle = 0.0, angleDelta = 0.0;
     juce::Slider frequencySlider;
     double currentFrequency = 440.0, targetFrequency = 440.0;
+    double currentGain = .125;
+    juce::Slider gainSlider;
     
 
 
